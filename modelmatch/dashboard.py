@@ -1,6 +1,7 @@
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from .ui import polish
 
 def chart(df,config):
     kind=config.get('kind','Histogram'); x=config.get('x'); y=config.get('y'); agg=config.get('aggregation','mean'); title=config.get('title',kind)
@@ -22,7 +23,7 @@ def chart(df,config):
         g=g.sort_values(x) if kind=='Time trend' else g.sort_values('value',ascending=False).head(30)
         fig=px.line(g,x=x,y='value',markers=True) if kind=='Time trend' else px.bar(g,x=x,y='value')
     fig.update_layout(template='plotly_white',title=title,colorway=['#2563eb','#14b8a6','#f59e0b'],margin=dict(l=20,r=20,t=55,b=30),height=440)
-    return fig
+    return polish(fig)
 
 def insight(df,numeric):
     if df.empty:return 'No records match the current filters.'

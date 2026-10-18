@@ -27,6 +27,16 @@ Open http://localhost:8501. Run checks with `python -m pytest -q`.
 6. Wait for dependency installation, open the assigned URL, run each example, and test one uploaded CSV and XLSX before sharing.
 The live application is deployed at https://blessing-modelmatch.streamlit.app/. Community Cloud apps can sleep and have resource limits; this is not an uptime guarantee.
 
+## BI Studio
+A report canvas with a field pane, configurable visuals, KPI cards, category filters, title editing, visual ordering, and JSON project save/reopen. Dataset-backed visuals use the active data and report filters. Pinned query results are clearly labelled snapshots and are independent of later report filters.
+
+The code workbench supports read-only SQLite SELECT queries against `dataset` and a deliberately restricted, interpreted pandas-expression subset using `df`. Query results can be downloaded and pinned as a table or chart. SQL runs in a fresh in-memory database with an authorizer, a small function allowlist, progress limits and disabled extensions. Pandas expressions are parsed and interpreted through an AST allowlist; Python `eval`/`exec`, imports, user-defined functions, files, external APIs and arbitrary server-side Python are not used. Limits: 10,000 input records, 5,000 displayed result rows, 10,000 code characters, 250 expression nodes and 12 report visuals. SQL cancellation uses a progress/time budget; a single pandas operation cannot be preempted mid-operation.
+
+For full Python, the scratchpad accepts scripts and exports `.py` and `.ipynb` plus the active dataset separately. Full scripts must be reviewed and run in the user's own Python/Jupyter environment. Session query history is not saved to a database. Report project exports include any pinned query-result records; treat those exports as sensitive when applicable.
+
+## Design
+A responsive navy navigation rail, light report canvas, consistent typography, indigo/teal chart theme, page-specific workspace headers, a calculated overview snapshot and workflow shortcuts. All charts remain based on actual records; decorative styling adds no fabricated scores or insights.
+
 ## Workflow
 - Original data is preserved in session state. Confirm semantic types, preview cleaning, then apply. Cleaning invalidates trained results.
 - Raw original and cleaned active data are separate; filters only affect dashboard outputs, not training.

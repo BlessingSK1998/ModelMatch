@@ -20,3 +20,10 @@ Verified in the build environment:
 
 Run `python -m pytest -q` to repeat the tests. See tested_versions.json for the environment versions.
 Public deployment verified on Streamlit Community Cloud: https://blessing-modelmatch.streamlit.app/ . The hosted regression workflow completed successfully (Ridge; held-out test MAE 42.86 vs dummy baseline MAE 64.01). The local automated suite passed 12 tests. Hosted dependency versions may differ from tested_versions.json; exports include the live runtime versions.
+
+## Premium workspace and BI Studio update
+- 35 automated tests passed after the UI and code-workbench update.
+- Read-only SQL aggregates and ordinary CTE queries validated. Writes, system-table access, extensions, PRAGMA, multiple statements and recursive SQL rejected.
+- Supported pandas filtering, arithmetic, grouping and aggregation validated. Imports, arbitrary attributes, file-writing, eval/query/apply/pipe and unbounded arithmetic paths rejected.
+- BI Studio navigation, running queries, pinning results and overview navigation shortcuts verified using Streamlit AppTest.
+- Original modelling, prediction, export and generated-code execution checks continue to pass.

@@ -7,6 +7,8 @@ import plotly.graph_objects as go
 import streamlit as st
 import joblib
 from sklearn.metrics import confusion_matrix,roc_curve,precision_recall_curve
+from modelmatch.studio import render as render_studio
+from modelmatch.ui import style,brand,header,polish
 from modelmatch.data import load_data,infer_roles,clean,quality,filter_data
 from modelmatch.dashboard import chart,insight
 from modelmatch.modeling import train,unsupervised,recommendations
@@ -15,14 +17,12 @@ from modelmatch.prediction import predict
 from modelmatch.exports import script,notebook,bundle,report,versions
 
 st.set_page_config(page_title='ModelMatch | Data to decisions',page_icon='◈',layout='wide')
-st.markdown('''<style>
-.block-container{padding-top:2rem;max-width:1500px}h1{letter-spacing:-1.5px} [data-testid="stMetric"]{background:white;border:1px solid #e2e8f0;padding:18px;border-radius:14px} [data-testid="stSidebar"]{border-right:1px solid #e2e8f0}.hero{background:linear-gradient(115deg,#102347,#1d4ed8);padding:30px 36px;border-radius:20px;color:white;margin-bottom:24px}.hero h1{color:white;font-size:38px}.hero p{color:#cbdcff}.pill{font-size:12px;letter-spacing:2px;color:#93c5fd}.stButton>button{border-radius:9px}
-</style>''',unsafe_allow_html=True)
+style()
 S=st.session_state
 with st.sidebar:
-    st.title('◈ ModelMatch')
-    st.caption('YOUR DATA. CLEARER DECISIONS.')
-    page=st.radio('Workspace',['Overview','Data Quality','Explore','Dashboard','Model Lab','Prediction Studio','Exports'])
+    brand()
+    st.markdown('<div class="sidebar-label">WORKSPACE</div>',unsafe_allow_html=True)
+    page=st.radio('Workspace',['Overview','Data Quality','Explore','Dashboard','BI Studio','Model Lab','Prediction Studio','Exports'],key='workspace_page',label_visibility='collapsed')
     st.divider()
     source=st.selectbox('Dataset source',['Health • Regression','Iris • Classification','Daily sales • Forecasting','Upload your dataset'])
     names={'Health • Regression':'health_regression.csv','Iris • Classification':'iris_classification.csv','Daily sales • Forecasting':'daily_sales.csv'}
@@ -51,13 +51,16 @@ if S.get('source_key')!=key:
         S.pop(k,None)
     S.source_key=key;S.original=original;S.data=original.copy(deep=True);S.roles=infer_roles(original);S.cleaning={'roles':S.roles.copy(),'duplicates':False,'exclude':[],'missing':'Keep for train-only imputation'};S.log=['Original data loaded; no cleaning applied.']
 df=S.data;roles=S.roles;numeric=[c for c in df.select_dtypes('number') if roles.get(c)!='identifier'];cats=[c for c in df if roles.get(c)=='category'];dates=[c for c in df if roles.get(c)=='date']
-st.markdown(f'<div class="hero"><div class="pill">MODELMATCH / {page.upper()}</div><h1>From raw data to real understanding.</h1><p>Explore patterns. Compare models. Make informed predictions.</p></div>',unsafe_allow_html=True)
-st.caption(f'{name} · Active analysis dataset: {len(df):,} rows × {len(df.columns)} columns · Dashboard filters never alter training data.')
+header(page,name,len(df),len(df.columns))
+
+def go_to(destination):
+    S.workspace_page=destination
 
 def download(label,data,name,mime=None,key=None):
     st.download_button(label,data,file_name=name,mime=mime,key=key)
 
 def show_chart(fig,key):
+    polish(fig)
     st.plotly_chart(fig,use_container_width=True,key=key)
     download('Download chart HTML',fig.to_html(include_plotlyjs=True),f'{key}.html','text/html',key=key+'_dl')
 
@@ -106,11 +109,34 @@ def ml_view(r):
 if page=='Overview':
     cols=st.columns(4)
     for col,label,value in zip(cols,['Records','Columns','Missing cells','Memory'],[f'{len(df):,}',len(df.columns),f'{df.isna().sum().sum():,}',f'{df.memory_usage(deep=True).sum()/1024**2:.2f} MB']):col.metric(label,value)
-    st.subheader('Your workspace, ready to explore')
-    st.write('1. Confirm types and cleaning in **Data Quality**. 2. Build charts in **Explore** and **Dashboard**. 3. Choose a goal in **Model Lab**. 4. Use **Prediction Studio** and export your work.')
-    st.dataframe(df.head(100),use_container_width=True)
-    st.subheader('Dataset schema');st.dataframe(pd.DataFrame({'column':df.columns,'dtype':df.dtypes.astype(str).values,'role':[roles[c] for c in df]}),hide_index=True)
-    st.write(insight(df,numeric));st.info('Examples: health progression regression (scikit-learn diabetes), Iris species classification, and synthetic daily sales. Example health fields are standardized, so their units are not raw clinical units.')
+    st.markdown('<div class="section-kicker">THE NEXT STEP</div>',unsafe_allow_html=True)
+    st.subheader('A clear path from upload to insight')
+    steps=[('01 / UNDERSTAND','Start with the right data','Review missing values, types and quality signals.','Data Quality','Review data'),('02 / DISCOVER','Make the patterns visible','Explore interactive charts and build your dashboard.','Dashboard','Open dashboard'),('03 / PREDICT','Put your question to the test','Compare suitable models and evaluate their predictions.','Model Lab','Enter Model Lab')]
+    for col,(step,title,copy,destination,label) in zip(st.columns(3),steps):
+        with col:
+            with st.container(border=True):
+                st.markdown(f'<div class="step-label">{step}</div><div class="step-title">{title}</div><div class="step-copy">{copy}</div>',unsafe_allow_html=True)
+                st.button(label,key='overview_'+destination,on_click=go_to,args=(destination,),use_container_width=True)
+    st.markdown('<div class="section-kicker">FIRST LOOK</div>',unsafe_allow_html=True)
+    st.subheader('Your dataset, in focus')
+    if numeric:
+        left,right=st.columns([1.65,1])
+        with left:
+            focus=st.selectbox('Explore a numeric field',numeric,index=len(numeric)-1)
+            show_chart(chart(df,{'kind':'Histogram','x':focus,'title':focus.replace('_',' ').title()+' · distribution'}),'overview_distribution')
+        with right:
+            with st.container(border=True):
+                st.markdown('<div class="insight-head">CALCULATED SNAPSHOT</div>',unsafe_allow_html=True)
+                st.write(insight(df,[focus]+[c for c in numeric if c!=focus][:2]))
+                st.caption('Statistics use the active analysis dataset. Association does not establish causation.')
+    preview_tab,schema_tab=st.tabs(['Data preview','Column guide'])
+    with preview_tab:
+        st.caption('First 100 records · use column headers to sort or the table toolbar to search.')
+        st.dataframe(df.head(100),use_container_width=True,height=340)
+    with schema_tab:
+        st.dataframe(pd.DataFrame({'Column':df.columns,'Data type':df.dtypes.astype(str).values,'Confirmed role':[roles[c] for c in df]}),hide_index=True,use_container_width=True)
+    with st.expander('About the example datasets'):
+        st.caption('Health regression uses the scikit-learn diabetes dataset with standardized measurements, not raw clinical units. Iris contains species observations. Daily sales is a synthetic series for demonstration.')
 elif page=='Data Quality':
     st.subheader('Inspect before changing')
     st.metric('Exact duplicate records',int(S.original.duplicated().sum()));st.dataframe(quality(S.original),hide_index=True,use_container_width=True)
@@ -140,7 +166,7 @@ elif page=='Data Quality':
         st.write(f'{c}: {d.min()} to {d.max()}; {len(d)} unique dates; {interval.nunique()} distinct intervals. '+('Irregular intervals: aggregate deliberately before forecasting.' if interval.nunique()>1 else 'Regular intervals among observed dates.'))
 elif page in ['Explore','Dashboard']:
     title=st.text_input('Dashboard title',S.get('dashboard',{}).get('title','My data, at a glance'),key='dash_title')
-    with st.expander('Filters · affect every chart, KPI and displayed table',expanded=True):
+    with st.expander('Filters · update all charts, metrics and records',expanded=False):
         filters={};fc=st.columns(3)
         # Bounded, user-selected filters avoid hundreds of widgets.
         filter_cols=st.multiselect('Filter columns',list(df),default=[c for c in S.get('dashboard',{}).get('filters',{}) if c in df],key='filter_columns')
@@ -180,7 +206,7 @@ elif page in ['Explore','Dashboard']:
                 if widget in ['dash_title','dash_kpis','dash_agg'] or widget.startswith('filter_'):S.pop(widget,None)
             st.rerun()
         except Exception:st.error('Invalid configuration or incompatible columns.')
-    with st.expander('Add a chart',expanded=not S.dashboard['charts']):
+    with st.expander('Chart builder · add a visual to your dashboard',expanded=False):
         kind=st.selectbox('Chart type',['Histogram','Category frequencies','Box','Scatter','Correlation','Group comparison','Time trend','Map'])
         x=st.selectbox('X / category / latitude',list(df));y=st.selectbox('Y / metric / longitude',numeric or list(df));a=st.selectbox('Aggregation',['count','mean','median','sum']);gran=st.selectbox('Time granularity',['D','W','M','Q','Y']);ct=st.text_input('Chart title',kind)
         if kind=='Map':st.caption('Select actual latitude for X and longitude for Y. Coordinates are range-validated; geographic names are not geocoded.')
@@ -203,6 +229,8 @@ elif page in ['Explore','Dashboard']:
     table=view[view.astype(str).apply(lambda c:c.str.contains(search,case=False,regex=False)).any(axis=1)] if search else view
     st.caption(f'{len(view):,} filtered records; {len(table):,} search matches. Click a table header to sort. Charts use at most 5,000 points for scatter/map.')
     st.dataframe(table,use_container_width=True);download('Download filtered data',view.to_csv(index=False),'filtered.csv');download('Save dashboard settings',json.dumps(S.dashboard,indent=2),'dashboard.json')
+elif page=='BI Studio':
+    render_studio(df,roles,S.source_key+json.dumps(S.cleaning,sort_keys=True))
 elif page=='Model Lab':
     st.subheader('Choose the question before the algorithm')
     question=st.text_input('What would you like to understand or predict?',S.get('model_config',{}).get('question',''))
