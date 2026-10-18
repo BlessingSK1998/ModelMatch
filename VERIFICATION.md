@@ -19,4 +19,4 @@ Verified in the build environment:
 - Running server: /_stcore/health returned ok; / returned HTTP 200.
 
 Run `python -m pytest -q` to repeat the tests. See tested_versions.json for the environment versions.
-No external public deployment was performed. The running workspace server is temporary; deploy through the README instructions for a shareable URL.
+Public deployment verified on Streamlit Community Cloud: https://blessing-modelmatch.streamlit.app/ . The hosted regression workflow completed successfully (Ridge; held-out test MAE 42.86 vs dummy baseline MAE 64.01). The local automated suite passed 12 tests. Hosted dependency versions may differ from tested_versions.json; exports include the live runtime versions.
