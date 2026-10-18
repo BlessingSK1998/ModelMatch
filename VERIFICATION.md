@@ -27,3 +27,11 @@ Public deployment verified on Streamlit Community Cloud: https://blessing-modelm
 - Supported pandas filtering, arithmetic, grouping and aggregation validated. Imports, arbitrary attributes, file-writing, eval/query/apply/pipe and unbounded arithmetic paths rejected.
 - BI Studio navigation, running queries, pinning results and overview navigation shortcuts verified using Streamlit AppTest.
 - Original modelling, prediction, export and generated-code execution checks continue to pass.
+
+## Automatic analysis update
+- Upload-triggered chart planning verified for numeric, category, time, grouped and geographic fields.
+- Numeric correlations exclude confirmed identifiers. Geographic plots require supplied, valid coordinate pairs.
+- Time chart tests verify missing periods remain gaps and monthly values remain aligned.
+- Target prioritisation tested for regression, classification and forecasting examples.
+- Streamlit integration test runs the full automatic comparison/evaluation/prediction workflow and verifies prediction row count equals the held-out test size.
+- Full interactive report generation and automatic dashboard creation tested.

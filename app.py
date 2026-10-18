@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import streamlit as st
 import joblib
 from sklearn.metrics import confusion_matrix,roc_curve,precision_recall_curve
+from modelmatch.automatic import render as render_automatic
 from modelmatch.studio import render as render_studio
 from modelmatch.ui import style,brand,header,polish
 from modelmatch.data import load_data,infer_roles,clean,quality,filter_data
@@ -49,6 +50,8 @@ if S.get('source_key')!=key:
     except Exception as e:st.error(str(e));st.stop()
     for k in ['result','predictions','model_config','dashboard','figures','filters']:
         S.pop(k,None)
+    for k in list(S):
+        if k.startswith('auto_'):S.pop(k,None)
     S.source_key=key;S.original=original;S.data=original.copy(deep=True);S.roles=infer_roles(original);S.cleaning={'roles':S.roles.copy(),'duplicates':False,'exclude':[],'missing':'Keep for train-only imputation'};S.log=['Original data loaded; no cleaning applied.']
 df=S.data;roles=S.roles;numeric=[c for c in df.select_dtypes('number') if roles.get(c)!='identifier'];cats=[c for c in df if roles.get(c)=='category'];dates=[c for c in df if roles.get(c)=='date']
 header(page,name,len(df),len(df.columns))
@@ -109,34 +112,7 @@ def ml_view(r):
 if page=='Overview':
     cols=st.columns(4)
     for col,label,value in zip(cols,['Records','Columns','Missing cells','Memory'],[f'{len(df):,}',len(df.columns),f'{df.isna().sum().sum():,}',f'{df.memory_usage(deep=True).sum()/1024**2:.2f} MB']):col.metric(label,value)
-    st.markdown('<div class="section-kicker">THE NEXT STEP</div>',unsafe_allow_html=True)
-    st.subheader('A clear path from upload to insight')
-    steps=[('01 / UNDERSTAND','Start with the right data','Review missing values, types and quality signals.','Data Quality','Review data'),('02 / DISCOVER','Make the patterns visible','Explore interactive charts and build your dashboard.','Dashboard','Open dashboard'),('03 / PREDICT','Put your question to the test','Compare suitable models and evaluate their predictions.','Model Lab','Enter Model Lab')]
-    for col,(step,title,copy,destination,label) in zip(st.columns(3),steps):
-        with col:
-            with st.container(border=True):
-                st.markdown(f'<div class="step-label">{step}</div><div class="step-title">{title}</div><div class="step-copy">{copy}</div>',unsafe_allow_html=True)
-                st.button(label,key='overview_'+destination,on_click=go_to,args=(destination,),use_container_width=True)
-    st.markdown('<div class="section-kicker">FIRST LOOK</div>',unsafe_allow_html=True)
-    st.subheader('Your dataset, in focus')
-    if numeric:
-        left,right=st.columns([1.65,1])
-        with left:
-            focus=st.selectbox('Explore a numeric field',numeric,index=len(numeric)-1)
-            show_chart(chart(df,{'kind':'Histogram','x':focus,'title':focus.replace('_',' ').title()+' · distribution'}),'overview_distribution')
-        with right:
-            with st.container(border=True):
-                st.markdown('<div class="insight-head">CALCULATED SNAPSHOT</div>',unsafe_allow_html=True)
-                st.write(insight(df,[focus]+[c for c in numeric if c!=focus][:2]))
-                st.caption('Statistics use the active analysis dataset. Association does not establish causation.')
-    preview_tab,schema_tab=st.tabs(['Data preview','Column guide'])
-    with preview_tab:
-        st.caption('First 100 records · use column headers to sort or the table toolbar to search.')
-        st.dataframe(df.head(100),use_container_width=True,height=340)
-    with schema_tab:
-        st.dataframe(pd.DataFrame({'Column':df.columns,'Data type':df.dtypes.astype(str).values,'Confirmed role':[roles[c] for c in df]}),hide_index=True,use_container_width=True)
-    with st.expander('About the example datasets'):
-        st.caption('Health regression uses the scikit-learn diabetes dataset with standardized measurements, not raw clinical units. Iris contains species observations. Daily sales is a synthetic series for demonstration.')
+    render_automatic(df,roles,S.source_key+json.dumps(S.cleaning,sort_keys=True),ml_view,go_to)
 elif page=='Data Quality':
     st.subheader('Inspect before changing')
     st.metric('Exact duplicate records',int(S.original.duplicated().sum()));st.dataframe(quality(S.original),hide_index=True,use_container_width=True)
@@ -159,7 +135,10 @@ elif page=='Data Quality':
         if st.button('Apply these changes',type='primary'):
             if proposed.empty or not len(proposed.columns):st.error('Cleaning would remove all data. Change your settings.')
             else:
-                S.data=proposed;S.log=log;S.cleaning=config;S.roles=config['roles'];S.pop('result',None);S.pop('proposal',None);S.pop('dashboard',None);st.rerun()
+                S.data=proposed;S.log=log;S.cleaning=config;S.roles=config['roles'];S.pop('result',None);S.pop('proposal',None);S.pop('dashboard',None)
+                for k in list(S):
+                    if k.startswith('auto_'):S.pop(k,None)
+                st.rerun()
     st.subheader('Transformation log');st.write(S.log)
     for c in dates:
         d=pd.to_datetime(df[c],errors='coerce').dropna().sort_values().drop_duplicates();interval=d.diff().dropna()
@@ -329,7 +308,7 @@ elif page=='Exports':
     st.caption('Exports contain the data or trained parameters you select. Keep sensitive exports private. A report is a file; it is not a hosted live dashboard.')
     download('Cleaned dataset',df.to_csv(index=False),'cleaned.csv')
     view=S.get('filtered',df);download('Filtered records',view.to_csv(index=False),'filtered.csv')
-    dashboard=S.get('dashboard',{'title':'ModelMatch','charts':[{'kind':'Histogram','x':numeric[0],'title':'Distribution'}] if numeric else []})
+    dashboard=S.get('dashboard',S.get('auto_chart_settings',{'title':'ModelMatch','charts':[{'kind':'Histogram','x':numeric[0],'title':'Distribution'}] if numeric else []}))
     config=S.get('model_config',{});code=script(config,S.cleaning,dashboard);nb=notebook(code)
     download('Python script',code,'workflow.py','text/x-python');download('Jupyter notebook',nb,'workflow.ipynb','application/json')
     download('Runnable workflow package (modules + examples)',bundle(code,nb,dashboard),'ModelMatch_workflow.zip','application/zip')

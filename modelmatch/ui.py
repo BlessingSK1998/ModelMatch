@@ -74,7 +74,7 @@ p,li{line-height:1.65}
 </style>'''
 
 PAGES={
-'Overview':('YOUR ANALYTICS WORKSPACE','Your data. A clearer picture.','Everything you need to move from a dataset to an informed decision, in one workspace.'),
+'Overview':('YOUR ANALYTICS WORKSPACE','Your complete analysis. Automatically.','Upload a dataset. Get interactive graphs, calculated insights and a guided path to models and predictions.'),
 'Data Quality':('START WITH TRUST','Better data. Stronger decisions.','Review quality signals, confirm column roles and preview every change before you apply it.'),
 'Explore':('FOLLOW YOUR CURIOSITY','Find the story in your data.','Explore relationships, compare groups and turn questions into interactive visuals.'),
 'Dashboard':('YOUR LIVE DATA CANVAS','The bigger picture, at a glance.','Build a focused dashboard. Every filter updates your charts, metrics and records together.'),

@@ -10,7 +10,7 @@ def chart(df,config):
     elif kind=='Box': fig=px.box(df,x=x if x!=y else None,y=y,points=False)
     elif kind=='Scatter': fig=px.scatter(df.head(5000),x=x,y=y,opacity=.65)
     elif kind=='Correlation':
-        corr=df.select_dtypes('number').corr().iloc[:30,:30]; fig=px.imshow(corr,zmin=-1,zmax=1,color_continuous_scale='RdBu_r',text_auto='.2f')
+        corr=df[config['columns']].select_dtypes('number').corr().iloc[:30,:30] if config.get('columns') else df.select_dtypes('number').corr().iloc[:30,:30]; fig=px.imshow(corr,zmin=-1,zmax=1,color_continuous_scale='RdBu_r',text_auto='.2f')
     elif kind=='Map':
         # Only explicit validated latitude and longitude; no geocoding guesses.
         lat=pd.to_numeric(df[x],errors='coerce'); lon=pd.to_numeric(df[y],errors='coerce'); valid=lat.between(-90,90)&lon.between(-180,180)
@@ -20,6 +20,8 @@ def chart(df,config):
         if kind=='Time trend':
             d[x]=pd.to_datetime(d[x],errors='coerce'); d=d.dropna(subset=[x]); d[x]=d[x].dt.to_period(config.get('granularity','M')).dt.to_timestamp()
         g=d.groupby(x,dropna=False).size().rename('value').reset_index() if agg=='count' else d.groupby(x,dropna=False)[y].agg(agg).rename('value').reset_index()
+        if kind=='Time trend' and not g.empty:
+            g=g.set_index(x).reindex(pd.date_range(g[x].min(),g[x].max(),freq={'D':'D','W':'W-MON','M':'MS','Q':'QS','Y':'YS'}.get(config.get('granularity','M'),config.get('granularity','M')))).rename_axis(x).reset_index()
         g=g.sort_values(x) if kind=='Time trend' else g.sort_values('value',ascending=False).head(30)
         fig=px.line(g,x=x,y='value',markers=True) if kind=='Time trend' else px.bar(g,x=x,y='value')
     fig.update_layout(template='plotly_white',title=title,colorway=['#2563eb','#14b8a6','#f59e0b'],margin=dict(l=20,r=20,t=55,b=30),height=440)
