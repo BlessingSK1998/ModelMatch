@@ -28,7 +28,10 @@ p,li{line-height:1.65}
 [data-testid="stSidebar"] [data-testid="stSidebarContent"]{padding-top:1.1rem}
 [data-testid="stSidebar"] h1,[data-testid="stSidebar"] h2,[data-testid="stSidebar"] p,[data-testid="stSidebar"] label,[data-testid="stSidebar"] .stCaption{color:#c9d4e8!important}
 [data-testid="stSidebar"] hr{border-color:#29364e;margin:1.5rem 0}
-[data-testid="stSidebar"] [role="radiogroup"]{gap:6px}
+[data-testid="stSidebar"] [role="radiogroup"]{gap:6px;width:100%!important;align-items:stretch!important}
+[data-testid="stSidebar"] [data-testid="stRadioOption"]{display:block!important;align-self:stretch;width:100%!important;box-sizing:border-box}
+[data-testid="stSidebar"] [data-testid="stRadioOption"]>div>div:first-child{display:none}
+[data-testid="stSidebar"] [data-testid="stRadioOption"] [data-testid="stMarkdownContainer"]{padding-left:2px}
 [data-testid="stSidebar"] [role="radiogroup"] label{padding:11px 14px;border-radius:10px;transition:background .15s;width:100%;margin:0!important}
 [data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked){background:#293b67;box-shadow:inset 3px 0 #8698ff}
 [data-testid="stSidebar"] [role="radiogroup"] label:hover{background:#1d2c47}
