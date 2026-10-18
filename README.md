@@ -3,6 +3,11 @@ Created by **Blessing Sekeramavi**.
 
 A runnable Streamlit data science workspace: upload → quality review → interactive exploration → goal selection → validation comparison → held-out evaluation → predictions → exports.
 
+## Live application
+[Open ModelMatch](https://blessing-modelmatch.streamlit.app/)
+
+Deployed on Streamlit Community Cloud. The source includes public/synthetic examples; uploaded datasets remain session-scoped.
+
 ## Run
 Python 3.11 or 3.12 recommended.
 ```bash
@@ -20,7 +25,7 @@ Open http://localhost:8501. Run checks with `python -m pytest -q`.
 4. Choose the repository and branch; main file path: **app.py**.
 5. Under advanced settings choose Python 3.11 or 3.12; click Deploy.
 6. Wait for dependency installation, open the assigned URL, run each example, and test one uploaded CSV and XLSX before sharing.
-No public deployment is claimed by this repository. Community Cloud apps can sleep and have resource limits; this is not an uptime guarantee.
+The live application is deployed at https://blessing-modelmatch.streamlit.app/. Community Cloud apps can sleep and have resource limits; this is not an uptime guarantee.
 
 ## Workflow
 - Original data is preserved in session state. Confirm semantic types, preview cleaning, then apply. Cleaning invalidates trained results.
