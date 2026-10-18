@@ -1,6 +1,7 @@
 """BI-style report canvas, field configuration and code workbench UI."""
 from html import escape
 import json
+import uuid
 import pandas as pd
 import streamlit as st
 from .dashboard import chart
@@ -60,6 +61,7 @@ def render(df,roles,data_key):
                         focus=nums[-1];S.bi_tiles=[{'source':'dataset','kind':'KPI','x':focus,'y':focus,'aggregation':'mean','title':'Average '+focus},{'source':'dataset','kind':'Histogram','x':focus,'y':focus,'title':focus+' distribution'}];st.rerun()
             columns=st.columns(2 if layout=='Two columns' else 1)
             for i,tile in enumerate(S.bi_tiles):
+                tile_id=tile.setdefault('id',uuid.uuid4().hex)
                 with columns[i%len(columns)]:
                     with st.container(border=True):
                         try:
@@ -76,7 +78,7 @@ def render(df,roles,data_key):
                                 st.plotly_chart(fig,use_container_width=True,key='bi_plot_'+str(i))
                                 st.download_button('Export visual',fig.to_html(include_plotlyjs=True),f'visual_{i+1}.html',key='bi_export_'+str(i))
                             with st.expander('Visual settings'):
-                                changed=st.text_input('Title',tile['title'],key='bi_rename_'+str(i))
+                                changed=st.text_input('Title',tile['title'],key='bi_rename_'+tile_id)
                                 if st.button('Update title',key='bi_update_'+str(i)):tile['title']=changed;st.rerun()
                                 moves=st.columns(2)
                                 if moves[0].button('Move earlier',key='bi_up_'+str(i),disabled=i==0):S.bi_tiles[i-1],S.bi_tiles[i]=S.bi_tiles[i],S.bi_tiles[i-1];st.rerun()
@@ -100,7 +102,7 @@ def render(df,roles,data_key):
                         if len(d)>5000 and source=='query':raise ValueError('Query snapshot limit: 5,000 rows.')
                         if t['kind'] not in ['Correlation','Table'] and (t.get('x') not in d or t.get('y') not in d):raise ValueError('Report fields do not match this dataset.')
                         if t.get('aggregation','mean') not in ['count','mean','sum','median']:raise ValueError('Unsupported aggregation.')
-                    S.bi_tiles=tiles;S.bi_pending_title=str(config.get('title','Untitled report'))[:150];S.bi_pending_layout=config.get('layout','Two columns');st.rerun()
+                    S.bi_tiles=tiles;S.bi_pending_title=str(config.get('title','Untitled report'))[:150];S.bi_pending_layout=config.get('layout') if config.get('layout') in ['One column','Two columns'] else 'Two columns';st.rerun()
                 except Exception as e:st.error(f'Could not open report: {e}')
     with code_tab:
         st.markdown('<div class="workbench-bar"><span>⌘ &nbsp; DATA WORKBENCH</span><span>dataset / df &nbsp;·&nbsp; session only</span></div>',unsafe_allow_html=True)
@@ -157,7 +159,7 @@ def render(df,roles,data_key):
                     if st.button('Pin result to report',type='primary'):
                         if len(S.bi_tiles)>=12:st.warning('Report is full. Remove a visual before pinning another.')
                         elif len(result.to_json())>1_000_000:st.warning('Snapshot is too large. Aggregate or filter to a result under 1 MB.')
-                        else:S.bi_tiles.append(spec);st.success('Pinned. Open Report canvas to see your visual.')
+                        else:S.bi_tiles.append(spec);st.toast('Pinned to Report canvas.');st.rerun()
             with st.expander('Expression reference & session history'):
                 st.code('df.head(25)\ndf[["region", "sales"]]\ndf[df["sales"] > 100]\ndf.groupby("region")["sales"].mean().reset_index()\ndf.groupby("region").agg({"sales": ["sum", "mean"]})\ndf["sales"].fillna(0).round(2)',language='python')
                 st.caption('Supported: selecting/filtering columns, numeric arithmetic, comparisons, groupby, agg, count/sum/mean/median/min/max/std/var/nunique/size/first/last, describe, head/tail, value_counts, sort_values, sort_index, reset_index, rename, fillna, dropna, round, isna/notna, isin, between, abs and clip. Expressions do not modify the original data or model training data.')
